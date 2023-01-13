@@ -1,3 +1,5 @@
+# https://stackoverflow.com/questions/74567159/how-to-update-marker-positions-in-a-scatter-mapbox
+
 # import statements
 import dash
 from dash import html
@@ -12,7 +14,7 @@ from datetime import date
 from datetime import datetime as dt
 
 # reading in the data
-df = pd.read_csv('dashbaord/data/dahsboard_data.csv',
+df = pd.read_csv('data/dahsboard_data.csv',
                  index_col=0, parse_dates=True)
 df = df.rename(columns={'MaxWSpd': 'Max Wind Speed (m/s)', 'WSpd': 'Average Wind Speed (m/s)',
                'TotPrcp': 'Total Precipitation (mm)', 'Temp': 'Average Sea Surface Temperature (°F)'})
@@ -41,9 +43,22 @@ def get_graph_options():
 
     return dict_list
 
+# getting dropdown data for the start and end dates
 
-# Initialise the app
+
+def get_start_end_options():
+    df_sub = df
+    dates = df_sub['Date'].unique()
+    dict_list = []
+    for i in dates:
+        dict_list.append({'label': i, 'value': i})
+
+    return dict_list
+
+
+# Initialise the app and server
 app = dash.Dash(__name__)
+server = app.server
 
 # Define the app layout
 app.layout = html.Div(
@@ -60,7 +75,7 @@ app.layout = html.Div(
                                       className='div-for-dropdown',
                                       style={'color': '#1E1E1E'}),
                                   html.P(
-                                      'Rust Tide Sample Date Dropdown'),
+                                      'Rust Tide Sample Date Dropdown', style={'font-size': '15px'}),
                                   html.Div(
                                       className="div-for-date-dropdown",
                                       children=[
@@ -73,7 +88,7 @@ app.layout = html.Div(
                                       ],
 
                                   ), html.P(
-                                      'Environmnetal Condition Dropdown', style={"margin-top": "10px"}),
+                                      'Environmnetal Condition Dropdown', style={"margin-top": "10px", 'font-size': '15px'}),
                                   html.Div(
                                       className="div-for-graph-dropdown",
                                       children=[
@@ -83,6 +98,30 @@ app.layout = html.Div(
                                                        style={
                                                            'backgroundColor': '#1E1E1E'},
                                                        className='graph-picker')
+
+                                      ],
+                                  ),
+                                  html.Div(
+                                      className="div-for-start-date",
+                                      children=[
+                                          dcc.Dropdown(id='start-picker',
+                                                       options=get_start_end_options(),
+                                                       value='2015-12-28',
+                                                       style={
+                                                           'backgroundColor': '#1E1E1E'},
+                                                       className='start-picker')
+
+                                      ],
+                                  ),
+                                  html.Div(
+                                      className="div-for-end-date",
+                                      children=[
+                                          dcc.Dropdown(id='end-picker',
+                                                       options=get_start_end_options(),
+                                                       value='2022-12-19',
+                                                       style={
+                                                           'backgroundColor': '#1E1E1E'},
+                                                       className='end-picker')
 
                                       ],
                                   ),
@@ -96,7 +135,7 @@ app.layout = html.Div(
                               children=[
                                   dcc.Graph(id='map',
                                             config={'displayModeBar': False},
-                                            animate=True,
+
                                             ),
                                   dcc.Graph(id='timeseries', config={
                                             'displayModeBar': False})
@@ -109,36 +148,45 @@ app.layout = html.Div(
 )
 
 
-# updating the timeseries scatter plot with callbacks
+# updating the scatter_mapbox plot with callbacks
 @ app.callback(Output('map', 'figure'),
                [Input('date-picker', 'value')])
-def update_timeseries(selected_week):
-    df_sub = df.dropna().loc[dt.strptime(selected_week, "%Y-%m-%d")]
-    print(df_sub['Lat'])
-    fig = px.density_mapbox(
-        df_sub,
-        'Lat',
-        'Long',
-        z='Margalefidinium polykrikoides (Cells/L)',
-    )
-    fig.update_layout(mapbox_style="carto-positron",
-                      margin=dict(t=5, b=5, l=5, r=10))
-    return fig
+def update_map(selected_week):
+    df_sub = df.dropna().loc[dt.strptime(
+        selected_week, "%Y-%m-%d")].reset_index(drop=True)
+
+    if len(df_sub) != 8:
+        fig = px.scatter_mapbox(
+            df_sub,
+            lat='Lat',
+            lon='Long',
+            custom_data=['Margalefidinium polykrikoides (Cells/L)']
+        ).update_layout(mapbox_style="carto-positron",
+                        margin=dict(t=5, b=5, l=5, r=10), uirevision=True).update_traces(hovertemplate="longitude: %{lon}<br>" +
+                                                                                         "latitude: %{lat}<br>" + "Margalefidinium polykrikoides (Cells/L): %{customdata[0]}<br>")
+        return fig
+    else:
+        fig = px.scatter_mapbox(
+            lat=df_sub.iloc[[2]],
+            lon=df_sub.iloc[[3]],
+            custom_data=[[df_sub.iloc[[4]]]],
+        ).update_layout(mapbox_style="carto-positron",
+                        margin=dict(t=5, b=5, l=5, r=10), uirevision=True).update_traces(hovertemplate="longitude: %{lon}<br>" +
+                                                                                         "latitude: %{lat}<br>" + "Margalefidinium polykrikoides (Cells/L): %{customdata[0]}<br>")
+        return fig
 
 
-# updating the scatter_mapbox plot with callbacks
+# updating the timeseries plot with callbacks
 @ app.callback(Output('timeseries', 'figure'),
-               [Input('graph-picker', 'value')])
-def update_timeseries(selected_graph):
-    df_sub = df[[selected_graph, 'Date']]
+               Input('graph-picker', 'value'), Input('start-picker', 'value'), Input('end-picker', 'value'))
+def update_timeseries(selected_graph, start_date, end_date):
+    df_sub = df[(df['Date'] > start_date) & (df['Date'] < end_date)]
+    df_sub = df_sub[[selected_graph, 'Date']]
     df_sub.dropna()
-    fig = px.scatter(df_sub, x="Date", y=selected_graph,
-                     template='plotly_dark')
 
-    fig.update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', },
-                      margin=dict(t=5, b=5, l=5, r=5))
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=False)
+    fig = px.scatter(df_sub, x="Date", y=selected_graph,
+                     template='plotly_dark').update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', },
+                                                           margin=dict(t=5, b=5, l=5, r=5)).update_xaxes(showgrid=False).update_yaxes(showgrid=False)
     return fig
 
 
