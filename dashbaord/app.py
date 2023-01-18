@@ -1,5 +1,3 @@
-# https://stackoverflow.com/questions/74567159/how-to-update-marker-positions-in-a-scatter-mapbox
-
 # import statements
 import dash
 from dash import html
@@ -43,9 +41,8 @@ def get_graph_options():
 
     return dict_list
 
-# getting dropdown data for the start and end dates
 
-
+# getting dropdown data for the time period dropdown
 def get_start_end_options():
     df_sub = df
     dates = df_sub['Date'].unique()
@@ -56,7 +53,7 @@ def get_start_end_options():
     return dict_list
 
 
-# Initialise the app and server
+# Initialise the app
 app = dash.Dash(__name__)
 server = app.server
 
@@ -126,19 +123,20 @@ app.layout = html.Div(
                                       ],
                                   ),
                                   html.H2('Project Information', style={
-                                          "margin-top": "50px"}),
+                                          "margin-top": "40px"}),
                                   html.P('This dashboard displays occurrences of the harmful algal bloom species Margalefidinium polykrikoides, also known as "rust tide". The dashboard features an interactive map showing the prevalence of rust tide in Narragansett Bay based on samples collected from three different sources.The goal of the dashboard is to create a foundational tool to gather all the data on "rust tide" in one location. Along with rust tide occurrences, the dashboard currently displays four environmental varaibles that may to contribute to rust tide occurrences. The data on "rust tide" is still limited as it is a relatively recent phenomenon. As more data becomes accessible, the dashboard will be updated.',
-                                         style={'font-size': '16px'})
+                                         style={'font-size': '14px'})
                               ]
                               ),
                      html.Div(className='eight columns div-for-charts bg-grey',
                               children=[
                                   dcc.Graph(id='map',
                                             config={'displayModeBar': False},
-
+                                          
                                             ),
                                   dcc.Graph(id='timeseries', config={
-                                            'displayModeBar': False})
+                                            'displayModeBar': False},
+                                            )
 
 
                               ])
@@ -164,6 +162,7 @@ def update_map(selected_week):
         ).update_layout(mapbox_style="carto-positron",
                         margin=dict(t=5, b=5, l=5, r=10), uirevision=True).update_traces(hovertemplate="longitude: %{lon}<br>" +
                                                                                          "latitude: %{lat}<br>" + "Margalefidinium polykrikoides (Cells/L): %{customdata[0]}<br>")
+
         return fig
     else:
         fig = px.scatter_mapbox(
@@ -186,7 +185,7 @@ def update_timeseries(selected_graph, start_date, end_date):
 
     fig = px.scatter(df_sub, x="Date", y=selected_graph,
                      template='plotly_dark').update_layout({'plot_bgcolor': 'rgba(0, 0, 0, 0)', },
-                                                           margin=dict(t=5, b=5, l=5, r=5)).update_xaxes(showgrid=False).update_yaxes(showgrid=False)
+                                                           margin=dict(t=5, b=5, l=5, r=10)).update_xaxes(showgrid=False).update_yaxes(showgrid=False)
     return fig
 
 
