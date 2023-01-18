@@ -67,19 +67,9 @@ def URI_sample_scraper():
     return df
 
 
-def WHOI_scraper():
-    URL = 'https://habhub.whoi.edu'
-    ssl._create_default_https_context = ssl._create_unverified_context
-    req = requests.get(URL)
-    soup = BeautifulSoup(req.text, 'html.parser')
-    print(soup)
-    # print(script)
-
-
 def main():
-    # clean_water_quality()
-    # print(URI_sample_scraper())
-    WHOI_scraper()
+    clean_water_quality()
+    URI_sample_scraper()
 
 
 if __name__ == "__main__":
