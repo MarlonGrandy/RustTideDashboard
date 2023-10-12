@@ -1,4 +1,5 @@
 # Rust Tide Data Dashboard
+![image](https://github.com/MarlonGrandy/rust-tide-dashboard/assets/106160715/04693ba5-2465-427a-8546-15d671d42b39)
 
 Welcome to the HAB rust tide Dashboard repository! This dashboard displays data on the harmful algal bloom 'Margalefidinium polykrikoides' also known as rust tide. It also includes information on environmental variables such as water temperature and salinity from reporting stations in the area.
 
